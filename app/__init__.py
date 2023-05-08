@@ -4,6 +4,9 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 import configparser
 
+from app.v1.views import init_cache
+
+
 # read config.ini file
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -18,5 +21,6 @@ def create_app():
 
     app.secret_key = config['app']['secret_key'] # TODO: Not sure if this line is required
     CORS(app)
+    init_cache(app)
 
     return app

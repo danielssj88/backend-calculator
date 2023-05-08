@@ -11,7 +11,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(length=20), unique=True, nullable=False)
-    password = Column(String(length=100), nullable=False)
+    password = Column(String(length=150), nullable=False)
     status = Column(Enum('active', 'inactive'), nullable=False, default='active')
 
 class Operation(Base):

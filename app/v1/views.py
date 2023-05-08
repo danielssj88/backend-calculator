@@ -15,11 +15,20 @@ from dao.OperationDao import OperationDao
 from . import api_v1
 import configparser
 from dao import get_db_session
+from flask_caching import Cache
+import json
 
 session = get_db_session()
 
 cfg = configparser.ConfigParser()
 cfg.read('config.ini')
+
+INITIAL_DEFAULT_BALANCE = 10000
+
+cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
+
+def init_cache(app):
+    cache.init_app(app)
 
 # Dummy database to store users
 '''
@@ -70,8 +79,7 @@ operations = [
 @api_v1.route('/operation', methods=['GET'])
 @jwt_required()
 def getOperations():
-    operation_dao = OperationDao(session)
-    operations = operation_dao.get_all()
+    operations = get_cached_operations()
     return jsonify(operations), 200
 
 @api_v1.route('/record', methods=['GET'])
@@ -90,6 +98,19 @@ def statement_is_valid(statement):
         return True
     return False
 
+@cache.cached(timeout=50, key_prefix='get_cached_operations')
+def get_cached_operations():
+    operation_dao = OperationDao(session)
+    response = operation_dao.get_all()
+    operations = []
+    for row in response:
+        operations.append({
+            'id': row.id,
+            'type': row.type, # 'addition', 'substraction', 'multiplication', 'division', 'square_root', 'random_string
+            'cost': row.cost
+        })
+    return operations
+
 def get_operation(statement):
     operation_selected = ''
     if '+' in statement:
@@ -104,6 +125,7 @@ def get_operation(statement):
         operation_selected = 'square_root'
     elif 'random_string' in statement:
         operation_selected = 'random_string'
+    operations = get_cached_operations()
     operation = [x for x in operations if x['type'] == operation_selected][0]
     return operation
 
@@ -132,15 +154,19 @@ def saveOperation():
     record_dao = RecordDao(session)
     
     record = record_dao.get_recent_record_by_user(user_id)
-    new_balance = record['balance'] - operation['cost']
+    current_balance = record.user_balance if record else INITIAL_DEFAULT_BALANCE
+    new_balance = current_balance - operation['cost']
+    operation_response = json.dumps({
+        'stmt': statement,
+        'res': res
+    })
     
     record_dao.create_record(
         operation_id=operation['id'],
         user_id=user_id,
         amount=operation['cost'],
         user_balance=new_balance,
-        operation_response=res,
-        date=datetime.date.today()
+        operation_response=operation_response
     )
     
     result = {
@@ -158,14 +184,16 @@ def login():
 
     user_dao = UserDao(session)
     user = user_dao.get_user_by_username(username)
-    if not user or not check_password_hash(user.get('password'), password):
+    if not user or not check_password_hash(user.password, password):
         return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
-    
+
     # Create an access token
-    access_token = create_access_token(identity=user['id'])
-    
-    current_balance = 10000 # Get from DB
-    
+    access_token = create_access_token(identity=user.id)
+
+    record_dao = RecordDao(session)
+    record = record_dao.get_recent_record_by_user(user.id)
+    current_balance = record.user_balance if record else INITIAL_DEFAULT_BALANCE
+
     response = {
         'access_token': access_token,
         'current_balance': current_balance
