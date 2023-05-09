@@ -16,24 +16,3 @@ class UserDao:
 
     def get_user_by_username(self, username: str) -> User:
         return self.session.query(User).filter_by(username=username).first()
-
-    def update_user(self, user_id: int, username: str = None, password: str = None, status: str = None) -> User:
-        user = self.get_user_by_id(user_id)
-        if not user:
-            return None
-        if username:
-            user.username = username
-        if password:
-            user.password = password
-        if status:
-            user.status = status
-        self.session.commit()
-        return user
-
-    def delete_user(self, user_id: int) -> bool:
-        user = self.get_user_by_id(user_id)
-        if not user:
-            return False
-        self.session.delete(user)
-        self.session.commit()
-        return True

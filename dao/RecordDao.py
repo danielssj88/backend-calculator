@@ -1,7 +1,8 @@
 from datetime import datetime
-from sqlalchemy.orm import Session
-from dao.models import Record, Operation
 from sqlalchemy import or_
+from sqlalchemy.orm import Session
+
+from dao.models import Record, Operation
 
 class RecordDao:
     def __init__(self, session: Session):
@@ -45,7 +46,6 @@ class RecordDao:
             .order_by(Record.date.desc()) \
             .all()
         )
-        
 
     def get_recent_record_by_user(self, user_id: int) -> Record:
         recent_record = (
@@ -54,11 +54,4 @@ class RecordDao:
             .order_by(Record.date.desc())
             .first()
         )
-
         return recent_record
-
-    def get_records_by_operation(self, operation_id: int) -> list:
-        return self.session.query(Record).filter_by(operation_id=operation_id).all()
-
-    def get_records_by_user_and_operation(self, user_id: int, operation_id: int) -> list:
-        return self.session.query(Record).filter_by(user_id=user_id, operation_id=operation_id).all()

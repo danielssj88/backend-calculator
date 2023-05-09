@@ -16,10 +16,10 @@ def create_app():
     app.register_blueprint(api_v1, url_prefix='/api/v1')
 
     # Set up JWT
-    app.config['JWT_SECRET_KEY'] = config['app']['jwt_secret_key']
+    app.config['JWT_SECRET_KEY'] = config['keys']['jwt_secret_key']
     jwt = JWTManager(app)
 
-    app.secret_key = config['app']['secret_key'] # TODO: Not sure if this line is required
+    app.secret_key = config['keys']['secret_key'] # TODO: Not sure if this line is required
     CORS(app)
     init_cache(app)
 
