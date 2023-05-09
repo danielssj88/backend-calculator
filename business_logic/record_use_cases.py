@@ -1,9 +1,10 @@
 import json
 
-from dao import get_db_session
+from dao.DatabaseManager import DatabaseManager
 from dao.RecordDao import RecordDao
 
-session = get_db_session()
+db_manager = DatabaseManager.get_instance()
+session = db_manager.get_session()
 
 def format_records(result):
     records = []

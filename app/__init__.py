@@ -4,7 +4,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 import configparser
 
-from app.v1.views import init_cache
+from app.v1.operation.operation import init_cache
 
 
 # read config.ini file

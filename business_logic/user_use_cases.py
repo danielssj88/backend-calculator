@@ -2,14 +2,15 @@ import configparser
 from flask_jwt_extended import create_access_token
 from werkzeug.security import check_password_hash
 
-from dao import get_db_session
+from dao.DatabaseManager import DatabaseManager
 from dao.UserDao import UserDao
 from dao.RecordDao import RecordDao
 
 cfg = configparser.ConfigParser()
 cfg.read('config.ini')
 
-session = get_db_session()
+db_manager = DatabaseManager.get_instance()
+session = db_manager.get_session()
 
 
 def user_login(username, password):

@@ -3,14 +3,16 @@ import configparser
 import json
 import re
 
-from dao import get_db_session
+from dao.DatabaseManager import DatabaseManager
 from dao.OperationDao import OperationDao
 from dao.RecordDao import RecordDao
 
 cfg = configparser.ConfigParser()
 cfg.read('config.ini')
 
-session = get_db_session()
+db_manager = DatabaseManager.get_instance()
+session = db_manager.get_session()
+
 
 def statement_is_valid(statement):
     if statement == ':str':
