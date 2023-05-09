@@ -22,6 +22,7 @@ class RecordDao:
         return record
 
     def get_records_by_user(self, user_id: int) -> list:
+        self.session.commit()
         return (
             self.session.query(Record)
             .filter_by(user_id=user_id)
@@ -30,6 +31,7 @@ class RecordDao:
         )
 
     def filter_records_by_user(self, user_id: int, searchValue: str) -> list:
+        self.session.commit()
         return (
             self.session.query(Record) \
             .join(Record.operation) \

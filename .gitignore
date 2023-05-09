@@ -1,2 +1,3 @@
 venv3.10.4/
 config.ini
+*.pyc
