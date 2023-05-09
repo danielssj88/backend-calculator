@@ -30,65 +30,40 @@ cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 def init_cache(app):
     cache.init_app(app)
 
-# Dummy database to store users
-'''
-users = {
-    "admin": {
-        "username": "admin",
-        "password": generate_password_hash("password123"),
-        "id": str(uuid.uuid4())
-    }
-}
-'''
-
-'''
-operations = [
-    {
-        "id": 1,
-        "type": "addition",
-        "cost": 10.0
-    },
-    {
-        "id": 2,
-        "type": "addition",
-        "cost": 10.0
-    },
-    {
-        "id": 3,
-        "type": "multiplication",
-        "cost": 15.0
-    },
-    {
-        "id": 4,
-        "type": "division",
-        "cost": 20.0
-    },
-    {
-        "id": 5,
-        "type": "square_root",
-        "cost": 25.0
-    },
-    {
-        "id": 6,
-        "type": "random_string",
-        "cost": 5.0
-    }
-]
-'''
-
 @api_v1.route('/operation', methods=['GET'])
 @jwt_required()
 def getOperations():
     operations = get_cached_operations()
     return jsonify(operations), 200
 
+def get_records(result):
+    records = []
+    for row in result:
+        records.append({
+            'id': row.id,
+            'operation': row.operation.type,
+            'amount': row.amount,
+            'user_balance': row.user_balance,
+            'operation_response': json.loads(row.operation_response),
+            'date': row.date
+        })
+    return records
+
 @api_v1.route('/record', methods=['GET'])
 @jwt_required()
 def getRecords():
     user_id = get_jwt_identity()
     record_dao = RecordDao(session)
-    records = record_dao.get_records_by_user(user_id)
-    return jsonify(records), 200
+    result = record_dao.get_records_by_user(user_id)
+    return jsonify(get_records(result)), 200
+
+@api_v1.route('/record/<searchValue>', methods=['GET'])
+@jwt_required()
+def filterRecords(searchValue):
+    user_id = get_jwt_identity()
+    record_dao = RecordDao(session)
+    result = record_dao.filter_records_by_user(user_id, searchValue)
+    return jsonify(get_records(result)), 200
 
 def statement_is_valid(statement):
     if statement == ':str':
@@ -106,7 +81,7 @@ def get_cached_operations():
     for row in response:
         operations.append({
             'id': row.id,
-            'type': row.type, # 'addition', 'substraction', 'multiplication', 'division', 'square_root', 'random_string
+            'type': row.type,
             'cost': row.cost
         })
     return operations
@@ -136,6 +111,9 @@ def get_random_string():
         return response.text
     return 'ERROR GENERATING RANDOM STRING'
 
+def encode_square_root(statement):
+    return statement.replace('\u221A', '')+'**0.5'
+
 @api_v1.route('/operation', methods=['POST'])
 @jwt_required()
 def saveOperation():
@@ -143,13 +121,14 @@ def saveOperation():
     statement = request.json.get('statement')
     if not statement_is_valid(statement):
         return jsonify({'success': False, 'error': 'Invalid operation'}), 400
-    if '\u221A' in statement:
-        statement = statement.replace('\u221A', '')+'**0.5'
     if ':str' in statement:
         res = get_random_string()
         statement = 'random_string'
     else:
-        res = eval(statement)
+        encoded_statement = statement
+        if '\u221A' in statement:
+            encoded_statement = encode_square_root(statement)
+        res = round(eval(encoded_statement), 2)
     operation = get_operation(statement)
     record_dao = RecordDao(session)
     
