@@ -11,7 +11,7 @@ def format_records(result):
     for row in result:
         records.append({
             'id': row.id,
-            'operation': row.operation.type,
+            'operation': row.operation,
             'amount': row.amount,
             'user_balance': row.user_balance,
             'operation_response': json.loads(row.operation_response),
